@@ -13,32 +13,62 @@
         PreviewKeyDown="Window_PreviewKeyDown"
         MouseDown="Window_MouseDown">
     <Window.Resources>
-        <SolidColorBrush x:Key="TextPrimary" Color="#E8ECEF" />
-        <SolidColorBrush x:Key="TextSecondary" Color="#A8B2BD" />
-        <SolidColorBrush x:Key="TextMuted" Color="#7E8792" />
-        <SolidColorBrush x:Key="ShellStroke" Color="#3E4651" />
-        <SolidColorBrush x:Key="CardStroke" Color="#3C4450" />
-        <SolidColorBrush x:Key="SearchStroke" Color="#4A5462" />
-        <SolidColorBrush x:Key="RowStroke" Color="#3A434F" />
-        <SolidColorBrush x:Key="RowHoverStroke" Color="#566274" />
-        <SolidColorBrush x:Key="RowSelectedStroke" Color="#6E7F95" />
-        <SolidColorBrush x:Key="ChipStroke" Color="#4C5562" />
+        <SolidColorBrush x:Key="TextPrimary" Color="#F1F5F8" />
+        <SolidColorBrush x:Key="TextSecondary" Color="#B8C3CF" />
+        <SolidColorBrush x:Key="TextMuted" Color="#8E9AAA" />
+        <SolidColorBrush x:Key="ShellStroke" Color="#5A6578" />
+        <SolidColorBrush x:Key="CardStroke" Color="#4D5869" />
+        <SolidColorBrush x:Key="SearchStroke" Color="#7D8AA0" />
+        <SolidColorBrush x:Key="RowStroke" Color="#5B677B" />
+        <SolidColorBrush x:Key="RowHoverStroke" Color="#8694AA" />
+        <SolidColorBrush x:Key="RowSelectedStroke" Color="#A7B9D1" />
+        <SolidColorBrush x:Key="ChipStroke" Color="#5C6678" />
 
-        <LinearGradientBrush x:Key="ShellBackground" StartPoint="0,0" EndPoint="1,1">
-            <GradientStop Color="#252A31" Offset="0" />
-            <GradientStop Color="#1D2229" Offset="0.6" />
-            <GradientStop Color="#181C22" Offset="1" />
+        <LinearGradientBrush x:Key="BackdropGradient" StartPoint="0,0" EndPoint="1,1">
+            <GradientStop Color="#262B33" Offset="0" />
+            <GradientStop Color="#1B1F27" Offset="0.5" />
+            <GradientStop Color="#11151B" Offset="1" />
         </LinearGradientBrush>
 
-        <LinearGradientBrush x:Key="PanelBackground" StartPoint="0,0" EndPoint="0,1">
-            <GradientStop Color="#2C333C" Offset="0" />
-            <GradientStop Color="#242A32" Offset="1" />
+        <LinearGradientBrush x:Key="ShellBackground" StartPoint="0,0" EndPoint="1,0">
+            <GradientStop Color="#2F3845" Offset="0" />
+            <GradientStop Color="#263140" Offset="0.42" />
+            <GradientStop Color="#2A3543" Offset="1" />
         </LinearGradientBrush>
 
-        <LinearGradientBrush x:Key="RowBackground" StartPoint="0,0" EndPoint="1,1">
-            <GradientStop Color="#2A3038" Offset="0" />
-            <GradientStop Color="#252C33" Offset="1" />
+        <LinearGradientBrush x:Key="PanelBackground" StartPoint="0,0" EndPoint="1,0">
+            <GradientStop Color="#323B47" Offset="0" />
+            <GradientStop Color="#28323F" Offset="0.5" />
+            <GradientStop Color="#2E3744" Offset="1" />
         </LinearGradientBrush>
+
+        <LinearGradientBrush x:Key="RowBackground" StartPoint="0,0" EndPoint="1,0">
+            <GradientStop Color="#343D4B" Offset="0" />
+            <GradientStop Color="#293442" Offset="0.5" />
+            <GradientStop Color="#333C4A" Offset="1" />
+        </LinearGradientBrush>
+
+        <DrawingBrush x:Key="StripeOverlay"
+                      TileMode="Tile"
+                      Viewport="0,0,26,26"
+                      ViewportUnits="Absolute"
+                      Viewbox="0,0,26,26"
+                      ViewboxUnits="Absolute">
+            <DrawingBrush.Drawing>
+                <DrawingGroup>
+                    <GeometryDrawing Brush="#10FFFFFF">
+                        <GeometryDrawing.Geometry>
+                            <RectangleGeometry Rect="0,0,9,26" />
+                        </GeometryDrawing.Geometry>
+                    </GeometryDrawing>
+                    <GeometryDrawing Brush="#08000000">
+                        <GeometryDrawing.Geometry>
+                            <RectangleGeometry Rect="9,0,17,26" />
+                        </GeometryDrawing.Geometry>
+                    </GeometryDrawing>
+                </DrawingGroup>
+            </DrawingBrush.Drawing>
+        </DrawingBrush>
 
         <Style x:Key="SearchBoxStyle" TargetType="TextBox">
             <Setter Property="Background" Value="Transparent" />
@@ -47,24 +77,69 @@
             <Setter Property="BorderThickness" Value="0" />
             <Setter Property="Padding" Value="0" />
             <Setter Property="FontFamily" Value="Bahnschrift SemiBold" />
-            <Setter Property="FontSize" Value="20" />
+            <Setter Property="FontSize" Value="18" />
             <Setter Property="FontWeight" Value="SemiBold" />
         </Style>
 
-        <Style x:Key="HeaderButtonStyle" TargetType="Button">
-            <Setter Property="Foreground" Value="{StaticResource TextPrimary}" />
-            <Setter Property="Background" Value="#333B46" />
-            <Setter Property="BorderBrush" Value="#4D5766" />
+        <Style x:Key="LogoButtonStyle" TargetType="ToggleButton">
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Width" Value="38" />
+            <Setter Property="Height" Value="38" />
+            <Setter Property="Background" Value="#4F5E73" />
+            <Setter Property="BorderBrush" Value="#8092AA" />
             <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="Padding" Value="14,7" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ToggleButton">
+                        <Border x:Name="Root"
+                                CornerRadius="12"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}">
+                            <Grid>
+                                <Border Margin="8"
+                                        CornerRadius="6"
+                                        BorderBrush="#95A9C4"
+                                        BorderThickness="1" />
+                                <TextBlock HorizontalAlignment="Center"
+                                           VerticalAlignment="Center"
+                                           Margin="0,-1,0,0"
+                                           FontFamily="Bahnschrift SemiBold"
+                                           FontSize="11"
+                                           FontWeight="SemiBold"
+                                           Foreground="{StaticResource TextPrimary}"
+                                           Text="FS" />
+                            </Grid>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Root" Property="Background" Value="#60728B" />
+                                <Setter TargetName="Root" Property="BorderBrush" Value="#9DB2CE" />
+                            </Trigger>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="Root" Property="Background" Value="#4A5D75" />
+                                <Setter TargetName="Root" Property="BorderBrush" Value="#B6C8DE" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="MenuButtonStyle" TargetType="Button">
+            <Setter Property="Foreground" Value="{StaticResource TextPrimary}" />
+            <Setter Property="Background" Value="#425163" />
+            <Setter Property="BorderBrush" Value="#75849A" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Padding" Value="14,8" />
             <Setter Property="FontFamily" Value="Bahnschrift SemiBold" />
-            <Setter Property="FontSize" Value="14" />
+            <Setter Property="FontSize" Value="15" />
             <Setter Property="Cursor" Value="Hand" />
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
                         <Border x:Name="Root"
-                                CornerRadius="14"
+                                CornerRadius="12"
                                 Background="{TemplateBinding Background}"
                                 BorderBrush="{TemplateBinding BorderBrush}"
                                 BorderThickness="{TemplateBinding BorderThickness}"
@@ -73,11 +148,7 @@
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Root" Property="Background" Value="#3C4653" />
-                                <Setter TargetName="Root" Property="BorderBrush" Value="#627082" />
-                            </Trigger>
-                            <Trigger Property="IsPressed" Value="True">
-                                <Setter TargetName="Root" Property="Background" Value="#2B323C" />
+                                <Setter TargetName="Root" Property="Background" Value="#506176" />
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -85,23 +156,18 @@
             </Setter>
         </Style>
 
-        <Style x:Key="QuitButtonStyle" TargetType="Button" BasedOn="{StaticResource HeaderButtonStyle}">
-            <Setter Property="Background" Value="#4A3C44" />
-            <Setter Property="BorderBrush" Value="#665462" />
-        </Style>
-
         <Style x:Key="ResultItemStyle" TargetType="ListBoxItem">
             <Setter Property="Foreground" Value="{StaticResource TextPrimary}" />
-            <Setter Property="Padding" Value="12,8,12,8" />
+            <Setter Property="Padding" Value="12,10" />
             <Setter Property="Margin" Value="0,0,0,6" />
             <Setter Property="Background" Value="{StaticResource RowBackground}" />
             <Setter Property="BorderBrush" Value="{StaticResource RowStroke}" />
-            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="BorderThickness" Value="1.2" />
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="ListBoxItem">
                         <Border x:Name="ItemBorder"
-                                CornerRadius="14"
+                                CornerRadius="16"
                                 Background="{TemplateBinding Background}"
                                 BorderBrush="{TemplateBinding BorderBrush}"
                                 BorderThickness="{TemplateBinding BorderThickness}"
@@ -110,11 +176,11 @@
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="ItemBorder" Property="Background" Value="#323B46" />
+                                <Setter TargetName="ItemBorder" Property="Background" Value="#3B485A" />
                                 <Setter TargetName="ItemBorder" Property="BorderBrush" Value="{StaticResource RowHoverStroke}" />
                             </Trigger>
                             <Trigger Property="IsSelected" Value="True">
-                                <Setter TargetName="ItemBorder" Property="Background" Value="#3A4654" />
+                                <Setter TargetName="ItemBorder" Property="Background" Value="#3F4F62" />
                                 <Setter TargetName="ItemBorder" Property="BorderBrush" Value="{StaticResource RowSelectedStroke}" />
                             </Trigger>
                         </ControlTemplate.Triggers>
@@ -124,252 +190,252 @@
         </Style>
     </Window.Resources>
 
-    <Grid Width="1180" Margin="0,30,0,0">
-        <Border CornerRadius="30" Background="#0E1116" Opacity="0.5" />
+    <Grid Margin="90,70,90,70">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
 
-        <Border CornerRadius="30"
-                BorderThickness="1"
-                BorderBrush="{StaticResource ShellStroke}"
+        <Border Grid.Row="0"
+                Width="980"
+                Padding="14,8,14,8"
+                CornerRadius="20"
+                BorderThickness="1.4"
+                BorderBrush="{StaticResource SearchStroke}"
                 Background="{StaticResource ShellBackground}">
             <Border.Effect>
-                <DropShadowEffect BlurRadius="28" ShadowDepth="2" Color="#000000" Opacity="0.45" />
+                <DropShadowEffect BlurRadius="20" ShadowDepth="3" Color="#000000" Opacity="0.42" />
             </Border.Effect>
 
-            <Grid Margin="16,14,16,10">
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="*" />
-                    <RowDefinition Height="Auto" />
-                </Grid.RowDefinitions>
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
 
-                <Grid Grid.Row="0" Margin="2,0,2,10">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="Auto" />
-                        <ColumnDefinition Width="Auto" />
-                    </Grid.ColumnDefinitions>
+                <ToggleButton x:Name="AppLogoButton"
+                              Grid.Column="0"
+                              Style="{StaticResource LogoButtonStyle}" />
 
-                    <StackPanel Grid.Column="0">
-                        <TextBlock Text="FlashSpot"
-                                   Foreground="{StaticResource TextPrimary}"
-                                   FontFamily="Bahnschrift SemiBold"
-                                   FontSize="48"
-                                   FontWeight="SemiBold" />
-                        <TextBlock x:Name="IndexHeaderText"
-                                   Margin="0,-2,0,0"
-                                   Foreground="{StaticResource TextSecondary}"
-                                   FontFamily="Bahnschrift SemiBold"
-                                   FontSize="13"
-                                   Text="Ready | Indexed 0 items" />
-                    </StackPanel>
+                <Rectangle Grid.Column="1"
+                           Width="1.5"
+                           Margin="12,0,12,0"
+                           Fill="#AAB8C9"
+                           RadiusX="1"
+                           RadiusY="1" />
 
-                    <Button Grid.Column="1"
-                            Margin="8,4,0,0"
-                            Style="{StaticResource HeaderButtonStyle}"
-                            Content="Tools"
-                            Click="ToolsButton_Click" />
-                    <Button Grid.Column="2"
-                            Margin="8,4,0,0"
-                            Style="{StaticResource QuitButtonStyle}"
-                            Content="Quit"
-                            Click="QuitButton_Click" />
-                </Grid>
+                <TextBox x:Name="SearchInput"
+                         Grid.Column="2"
+                         Style="{StaticResource SearchBoxStyle}"
+                         VerticalContentAlignment="Center"
+                         TextChanged="SearchInput_TextChanged" />
 
-                <Border Grid.Row="1"
-                        Padding="13,9,13,9"
-                        CornerRadius="16"
-                        BorderThickness="1"
-                        BorderBrush="{StaticResource SearchStroke}"
-                        Background="#2B323B">
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto" />
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="Auto" />
-                        </Grid.ColumnDefinitions>
+                <TextBlock x:Name="HotkeyHintText"
+                           Grid.Column="3"
+                           Foreground="{StaticResource TextSecondary}"
+                           FontFamily="Bahnschrift SemiBold"
+                           FontSize="18"
+                           FontWeight="SemiBold"
+                           Opacity="0.8"
+                           VerticalAlignment="Center"
+                           Text="Alt+Space" />
 
-                        <TextBlock Grid.Column="0"
-                                   Text="?"
-                                   FontSize="16"
-                                   Foreground="{StaticResource TextMuted}"
-                                   VerticalAlignment="Center"
-                                   Margin="0,0,9,0" />
-
-                        <TextBox x:Name="SearchInput"
-                                 Grid.Column="1"
-                                 Style="{StaticResource SearchBoxStyle}"
-                                 TextChanged="SearchInput_TextChanged" />
-
-                        <TextBlock x:Name="HotkeyHintText"
-                                   Grid.Column="2"
-                                   Foreground="{StaticResource TextSecondary}"
-                                   FontFamily="Bahnschrift SemiBold"
-                                   FontSize="13"
-                                   VerticalAlignment="Center"
-                                   Margin="10,0,0,0"
-                                   Text="Alt+Space" />
-                    </Grid>
-                </Border>
-
-                <ScrollViewer Grid.Row="2"
-                              Margin="0,8,0,6"
-                              HorizontalScrollBarVisibility="Hidden"
-                              VerticalScrollBarVisibility="Disabled">
-                    <StackPanel Orientation="Horizontal">
-                        <Border Background="#2F3640" BorderBrush="{StaticResource ChipStroke}" BorderThickness="1" CornerRadius="12" Padding="10,3" Margin="0,0,6,0"><TextBlock Foreground="{StaticResource TextSecondary}" FontFamily="Bahnschrift SemiBold" FontSize="11" Text="Apps" /></Border>
-                        <Border Background="#2F3640" BorderBrush="{StaticResource ChipStroke}" BorderThickness="1" CornerRadius="12" Padding="10,3" Margin="0,0,6,0"><TextBlock Foreground="{StaticResource TextSecondary}" FontFamily="Bahnschrift SemiBold" FontSize="11" Text="Folders" /></Border>
-                        <Border Background="#2F3640" BorderBrush="{StaticResource ChipStroke}" BorderThickness="1" CornerRadius="12" Padding="10,3" Margin="0,0,6,0"><TextBlock Foreground="{StaticResource TextSecondary}" FontFamily="Bahnschrift SemiBold" FontSize="11" Text="Documents" /></Border>
-                        <Border Background="#2F3640" BorderBrush="{StaticResource ChipStroke}" BorderThickness="1" CornerRadius="12" Padding="10,3" Margin="0,0,6,0"><TextBlock Foreground="{StaticResource TextSecondary}" FontFamily="Bahnschrift SemiBold" FontSize="11" Text="Images" /></Border>
-                        <Border Background="#2F3640" BorderBrush="{StaticResource ChipStroke}" BorderThickness="1" CornerRadius="12" Padding="10,3" Margin="0,0,6,0"><TextBlock Foreground="{StaticResource TextSecondary}" FontFamily="Bahnschrift SemiBold" FontSize="11" Text="Recent" /></Border>
-                    </StackPanel>
-                </ScrollViewer>
-
-                <StackPanel Grid.Row="3" Margin="0,0,0,7">
-                    <ProgressBar x:Name="IndexingProgressBar"
-                                 Height="4"
-                                 Margin="0,0,0,5"
-                                 IsIndeterminate="True"
-                                 Foreground="#7A8491"
-                                 Background="#313840"
-                                 Visibility="Collapsed" />
-                    <TextBlock x:Name="SearchStatusText"
-                               Foreground="{StaticResource TextSecondary}"
-                               FontFamily="Bahnschrift SemiBold"
-                               FontSize="14"
-                               Text="Type to search your existing FlashSpot index." />
-                </StackPanel>
-
-                <Border Grid.Row="4"
-                        Background="{StaticResource PanelBackground}"
-                        BorderBrush="{StaticResource CardStroke}"
-                        BorderThickness="1"
-                        CornerRadius="20"
-                        Padding="8">
-                    <ListBox x:Name="ResultsList"
-                             Background="Transparent"
-                             BorderThickness="0"
-                             Padding="2,0,2,0"
-                             MinHeight="320"
-                             MaxHeight="450"
-                             ItemContainerStyle="{StaticResource ResultItemStyle}"
-                             SelectionMode="Single"
-                             ScrollViewer.VerticalScrollBarVisibility="Auto"
-                             ScrollViewer.HorizontalScrollBarVisibility="Disabled"
-                             MouseDoubleClick="ResultsList_MouseDoubleClick">
-                        <ListBox.ItemTemplate>
-                            <DataTemplate>
-                                <Grid>
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="Auto" />
-                                        <ColumnDefinition Width="*" />
-                                        <ColumnDefinition Width="Auto" />
-                                    </Grid.ColumnDefinitions>
-
-                                    <Border Grid.Column="0"
-                                            Width="40"
-                                            Height="28"
-                                            CornerRadius="8"
-                                            Margin="0,0,10,0"
-                                            VerticalAlignment="Center"
-                                            Background="#3A424D"
-                                            BorderBrush="#566172"
-                                            BorderThickness="1">
-                                        <Grid>
-                                            <Image Width="16"
-                                                   Height="16"
-                                                   Source="{Binding IconImage}"
-                                                   HorizontalAlignment="Center"
-                                                   VerticalAlignment="Center">
-                                                <Image.Style>
-                                                    <Style TargetType="Image">
-                                                        <Setter Property="Visibility" Value="Visible" />
-                                                        <Style.Triggers>
-                                                            <DataTrigger Binding="{Binding IconImage}" Value="{x:Null}">
-                                                                <Setter Property="Visibility" Value="Collapsed" />
-                                                            </DataTrigger>
-                                                        </Style.Triggers>
-                                                    </Style>
-                                                </Image.Style>
-                                            </Image>
-                                            <TextBlock Text="{Binding IconText}"
-                                                       Foreground="{StaticResource TextSecondary}"
-                                                       FontFamily="Bahnschrift SemiBold"
-                                                       FontSize="10"
-                                                       HorizontalAlignment="Center"
-                                                       VerticalAlignment="Center">
-                                                <TextBlock.Style>
-                                                    <Style TargetType="TextBlock">
-                                                        <Setter Property="Visibility" Value="Collapsed" />
-                                                        <Style.Triggers>
-                                                            <DataTrigger Binding="{Binding IconImage}" Value="{x:Null}">
-                                                                <Setter Property="Visibility" Value="Visible" />
-                                                            </DataTrigger>
-                                                        </Style.Triggers>
-                                                    </Style>
-                                                </TextBlock.Style>
-                                            </TextBlock>
-                                        </Grid>
-                                    </Border>
-
-                                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                                        <TextBlock Text="{Binding Title}"
-                                                   Foreground="{StaticResource TextPrimary}"
-                                                   FontFamily="Bahnschrift SemiBold"
-                                                   FontSize="20"
-                                                   FontWeight="SemiBold"
-                                                   Margin="0,0,0,1"
-                                                   TextTrimming="CharacterEllipsis" />
-                                        <TextBlock Text="{Binding Subtitle}"
-                                                   Foreground="{StaticResource TextSecondary}"
-                                                   FontFamily="Cascadia Mono"
-                                                   FontSize="11"
-                                                   Margin="0,0,0,1"
-                                                   TextTrimming="CharacterEllipsis" />
-                                    </StackPanel>
-
-                                    <StackPanel Grid.Column="2" Margin="10,0,0,0" VerticalAlignment="Center">
-                                        <TextBlock Text="{Binding DateText}"
-                                                   Foreground="{StaticResource TextMuted}"
-                                                   FontFamily="Cascadia Mono"
-                                                   FontSize="12"
-                                                   HorizontalAlignment="Right" />
-                                        <TextBlock Text="{Binding SizeText}"
-                                                   Foreground="{StaticResource TextPrimary}"
-                                                   FontFamily="Bahnschrift SemiBold"
-                                                   FontSize="15"
-                                                   HorizontalAlignment="Right" />
-                                    </StackPanel>
-                                </Grid>
-                            </DataTemplate>
-                        </ListBox.ItemTemplate>
-                    </ListBox>
-                </Border>
-
-                <Grid Grid.Row="5" Margin="2,8,2,0">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="Auto" />
-                    </Grid.ColumnDefinitions>
-
-                    <TextBlock x:Name="QueueFooterText"
-                               Grid.Column="0"
-                               Foreground="{StaticResource TextSecondary}"
-                               FontFamily="Bahnschrift SemiBold"
-                               FontSize="13"
-                               Text="Pending 0 | Failed 0" />
-
-                    <TextBlock x:Name="KeyHintFooterText"
-                               Grid.Column="1"
-                               Foreground="{StaticResource TextSecondary}"
-                               FontFamily="Bahnschrift SemiBold"
-                               FontSize="13"
-                               Text="Enter: Open   Esc: Hide   Alt+Space: Toggle" />
-                </Grid>
+                <Popup x:Name="LogoMenuPopup"
+                       PlacementTarget="{Binding ElementName=AppLogoButton}"
+                       Placement="Bottom"
+                       VerticalOffset="8"
+                       AllowsTransparency="True"
+                       StaysOpen="False"
+                       IsOpen="{Binding IsChecked, ElementName=AppLogoButton, Mode=TwoWay}">
+                    <Border Padding="10"
+                            CornerRadius="14"
+                            BorderBrush="#7A879C"
+                            BorderThickness="1"
+                            Background="#2D3948">
+                        <Button Content="Settings"
+                                Style="{StaticResource MenuButtonStyle}"
+                                Click="OpenSettingsButton_Click" />
+                    </Border>
+                </Popup>
             </Grid>
         </Border>
+
+        <TextBlock x:Name="IndexHeaderText"
+                   Grid.Row="1"
+                   Margin="4,6,0,0"
+                   Foreground="{StaticResource TextSecondary}"
+                   FontFamily="Bahnschrift SemiBold"
+                   FontSize="14"
+                   Visibility="Collapsed"
+                   Text="Ready | Indexed 0 items" />
+
+        <ScrollViewer x:Name="FilterChipsScrollViewer"
+                      Grid.Row="2"
+                      Margin="0,8,0,0"
+                      Visibility="Collapsed"
+                      HorizontalScrollBarVisibility="Hidden"
+                      VerticalScrollBarVisibility="Disabled">
+            <StackPanel Orientation="Horizontal">
+                <Border Background="#334050" BorderBrush="{StaticResource ChipStroke}" BorderThickness="1" CornerRadius="14" Padding="12,4" Margin="0,0,7,0"><TextBlock Foreground="{StaticResource TextSecondary}" FontFamily="Bahnschrift SemiBold" FontSize="12" Text="Apps" /></Border>
+                <Border Background="#334050" BorderBrush="{StaticResource ChipStroke}" BorderThickness="1" CornerRadius="14" Padding="12,4" Margin="0,0,7,0"><TextBlock Foreground="{StaticResource TextSecondary}" FontFamily="Bahnschrift SemiBold" FontSize="12" Text="Folders" /></Border>
+                <Border Background="#334050" BorderBrush="{StaticResource ChipStroke}" BorderThickness="1" CornerRadius="14" Padding="12,4" Margin="0,0,7,0"><TextBlock Foreground="{StaticResource TextSecondary}" FontFamily="Bahnschrift SemiBold" FontSize="12" Text="Documents" /></Border>
+                <Border Background="#334050" BorderBrush="{StaticResource ChipStroke}" BorderThickness="1" CornerRadius="14" Padding="12,4" Margin="0,0,7,0"><TextBlock Foreground="{StaticResource TextSecondary}" FontFamily="Bahnschrift SemiBold" FontSize="12" Text="Images" /></Border>
+                <Border Background="#334050" BorderBrush="{StaticResource ChipStroke}" BorderThickness="1" CornerRadius="14" Padding="12,4" Margin="0,0,7,0"><TextBlock Foreground="{StaticResource TextSecondary}" FontFamily="Bahnschrift SemiBold" FontSize="12" Text="Recent" /></Border>
+            </StackPanel>
+        </ScrollViewer>
+
+        <StackPanel Grid.Row="3" Margin="2,0,2,0" Visibility="Collapsed">
+            <ProgressBar x:Name="IndexingProgressBar"
+                         Height="5"
+                         Margin="0,0,0,7"
+                         IsIndeterminate="True"
+                         Foreground="#8F9DB1"
+                         Background="#2D3742"
+                         Visibility="Collapsed" />
+            <TextBlock x:Name="SearchStatusText"
+                       Foreground="{StaticResource TextSecondary}"
+                       FontFamily="Bahnschrift SemiBold"
+                       FontSize="16"
+                       Text="Type to search your existing FlashSpot index." />
+        </StackPanel>
+
+        <Border Grid.Row="4"
+                Width="980"
+                Margin="0,8,0,0"
+                Background="{StaticResource PanelBackground}"
+                BorderBrush="{StaticResource CardStroke}"
+                BorderThickness="1.2"
+                CornerRadius="20"
+                Padding="8">
+            <Border.Effect>
+                <DropShadowEffect BlurRadius="20" ShadowDepth="3" Color="#000000" Opacity="0.34" />
+            </Border.Effect>
+            <ListBox x:Name="ResultsList"
+                     Background="Transparent"
+                     BorderThickness="0"
+                     Padding="2,2,2,0"
+                     MinHeight="90"
+                     MaxHeight="260"
+                     ItemContainerStyle="{StaticResource ResultItemStyle}"
+                     SelectionMode="Single"
+                     ScrollViewer.VerticalScrollBarVisibility="Auto"
+                     ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                     MouseDoubleClick="ResultsList_MouseDoubleClick">
+                <ListBox.ItemTemplate>
+                    <DataTemplate>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+
+                            <Border Grid.Column="0"
+                                    Width="56"
+                                    Height="46"
+                                    CornerRadius="12"
+                                    Margin="0,0,10,0"
+                                    VerticalAlignment="Center"
+                                    Background="#47566A"
+                                    BorderBrush="#7E90A8"
+                                    BorderThickness="1.2">
+                                <Grid>
+                                    <Image Width="16"
+                                           Height="16"
+                                           Source="{Binding IconImage}"
+                                           HorizontalAlignment="Center"
+                                           VerticalAlignment="Center">
+                                        <Image.Style>
+                                            <Style TargetType="Image">
+                                                <Setter Property="Visibility" Value="Visible" />
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding IconImage}" Value="{x:Null}">
+                                                        <Setter Property="Visibility" Value="Collapsed" />
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Image.Style>
+                                    </Image>
+                                    <TextBlock Text="{Binding IconText}"
+                                               Foreground="{StaticResource TextSecondary}"
+                                               FontFamily="Bahnschrift SemiBold"
+                                               FontSize="11"
+                                               HorizontalAlignment="Center"
+                                               VerticalAlignment="Center">
+                                        <TextBlock.Style>
+                                            <Style TargetType="TextBlock">
+                                                <Setter Property="Visibility" Value="Collapsed" />
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding IconImage}" Value="{x:Null}">
+                                                        <Setter Property="Visibility" Value="Visible" />
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </TextBlock.Style>
+                                    </TextBlock>
+                                </Grid>
+                            </Border>
+
+                            <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                <TextBlock Text="{Binding Title}"
+                                           Foreground="{StaticResource TextPrimary}"
+                                           FontFamily="Bahnschrift SemiBold"
+                                           FontSize="18"
+                                           FontWeight="SemiBold"
+                                           Margin="0,0,0,1"
+                                           TextTrimming="CharacterEllipsis" />
+                                <TextBlock Text="{Binding Subtitle}"
+                                           Foreground="{StaticResource TextSecondary}"
+                                           FontFamily="Cascadia Mono"
+                                           FontSize="11"
+                                           TextTrimming="CharacterEllipsis" />
+                            </StackPanel>
+
+                            <StackPanel Grid.Column="2" Margin="14,0,0,0" VerticalAlignment="Center">
+                                <TextBlock Text="{Binding DateText}"
+                                           Foreground="{StaticResource TextSecondary}"
+                                           FontFamily="Bahnschrift SemiBold"
+                                           FontSize="12"
+                                           HorizontalAlignment="Right" />
+                                <TextBlock Text="{Binding SizeText}"
+                                           Foreground="{StaticResource TextPrimary}"
+                                           FontFamily="Bahnschrift SemiBold"
+                                           FontSize="18"
+                                           HorizontalAlignment="Right" />
+                            </StackPanel>
+                        </Grid>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+        </Border>
+
+        <Grid Grid.Row="5" Margin="2,8,2,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+
+            <TextBlock x:Name="QueueFooterText"
+                       Grid.Column="0"
+                       Foreground="{StaticResource TextSecondary}"
+                       FontFamily="Bahnschrift SemiBold"
+                       FontSize="12"
+                       Visibility="Collapsed"
+                       Text="Pending 0 | Failed 0" />
+
+            <TextBlock x:Name="KeyHintFooterText"
+                       Grid.Column="1"
+                       Foreground="{StaticResource TextSecondary}"
+                       FontFamily="Bahnschrift SemiBold"
+                       FontSize="12"
+                       Visibility="Collapsed"
+                       Text="Enter: Open   Esc: Hide   Alt+Space: Toggle" />
+        </Grid>
     </Grid>
 </Window>
-

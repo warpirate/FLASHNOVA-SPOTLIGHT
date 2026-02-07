@@ -24,7 +24,7 @@ public partial class App : Application
         _indexStatusService = new FileSystemIndexStatusService(settingsProvider);
         ICalculatorService calculator = new SimpleCalculatorService();
 
-        _searchWindow = new SearchWindow(_searchService, calculator, _indexStatusService);
+        _searchWindow = new SearchWindow(_searchService, calculator, _indexStatusService, settingsProvider);
 
         _searchHotkey = TryRegisterHotkey();
         if (_searchHotkey is not null)

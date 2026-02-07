@@ -1,7 +1,6 @@
 using System.Collections.ObjectModel;
 using System.Collections.Concurrent;
 using System.Diagnostics;
-using System.IO;
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Input;
@@ -22,24 +21,34 @@ public partial class SearchWindow : Window
     private readonly IFileSearchService _fileSearchService;
     private readonly ICalculatorService _calculatorService;
     private readonly IIndexStatusService _indexStatusService;
+    private readonly IFlashSpotSettingsProvider _settingsProvider;
     private readonly ObservableCollection<SearchListItem> _results = [];
     private readonly DispatcherTimer _searchDebounceTimer;
     private readonly DispatcherTimer _indexStatusTimer;
     private static readonly ConcurrentDictionary<string, ImageSource?> IconCache = new(StringComparer.OrdinalIgnoreCase);
 
     private CancellationTokenSource? _searchCts;
+    private SettingsWindow? _settingsWindow;
     private string _hotkeyHint = "Alt+Space";
     private bool _allowRealClose;
     private bool _statusRefreshInFlight;
+    private SpotlightUiPreferences _uiPreferences = new()
+    {
+        ShowKeyHintsInFooter = false,
+        ShowIndexStatusInHeader = false,
+        ShowFilterChips = false
+    };
 
     public SearchWindow(
         IFileSearchService fileSearchService,
         ICalculatorService calculatorService,
-        IIndexStatusService indexStatusService)
+        IIndexStatusService indexStatusService,
+        IFlashSpotSettingsProvider settingsProvider)
     {
         _fileSearchService = fileSearchService;
         _calculatorService = calculatorService;
         _indexStatusService = indexStatusService;
+        _settingsProvider = settingsProvider;
 
         InitializeComponent();
 
@@ -59,6 +68,7 @@ public partial class SearchWindow : Window
         _indexStatusTimer.Start();
 
         KeyHintFooterText.Text = $"Enter: Open   Esc: Hide   {_hotkeyHint}: Toggle";
+        ApplyUiPreferences();
         _ = RefreshIndexStatusAsync();
     }
 
@@ -81,6 +91,7 @@ public partial class SearchWindow : Window
         _hotkeyHint = hotkey;
         HotkeyHintText.Text = hotkey;
         KeyHintFooterText.Text = $"Enter: Open   Esc: Hide   {hotkey}: Toggle";
+        _settingsWindow?.ApplyHotkeyHint(hotkey);
     }
 
     public void AllowRealClose()
@@ -101,6 +112,7 @@ public partial class SearchWindow : Window
         _indexStatusTimer.Stop();
         _searchCts?.Cancel();
         _searchCts?.Dispose();
+        _settingsWindow?.Close();
 
         base.OnClosing(e);
     }
@@ -348,6 +360,48 @@ public partial class SearchWindow : Window
         IndexingProgressBar.Visibility = snapshot.IsIndexing ? Visibility.Visible : Visibility.Collapsed;
     }
 
+    private void ApplyUiPreferences()
+    {
+        KeyHintFooterText.Visibility = _uiPreferences.ShowKeyHintsInFooter ? Visibility.Visible : Visibility.Collapsed;
+        IndexHeaderText.Visibility = _uiPreferences.ShowIndexStatusInHeader ? Visibility.Visible : Visibility.Collapsed;
+        FilterChipsScrollViewer.Visibility = _uiPreferences.ShowFilterChips ? Visibility.Visible : Visibility.Collapsed;
+    }
+
+    private void OpenSettingsButton_Click(object sender, RoutedEventArgs e)
+    {
+        AppLogoButton.IsChecked = false;
+
+        if (_settingsWindow is null)
+        {
+            _settingsWindow = new SettingsWindow(
+                _indexStatusService,
+                _settingsProvider,
+                _hotkeyHint,
+                Clone(_uiPreferences),
+                OnUiPreferencesChanged);
+            _settingsWindow.Closed += (_, _) => _settingsWindow = null;
+        }
+        else
+        {
+            _settingsWindow.ApplyHotkeyHint(_hotkeyHint);
+        }
+
+        if (_settingsWindow.WindowState == WindowState.Minimized)
+        {
+            _settingsWindow.WindowState = WindowState.Normal;
+        }
+
+        _settingsWindow.Show();
+        _settingsWindow.Activate();
+        Hide();
+    }
+
+    private void OnUiPreferencesChanged(SpotlightUiPreferences preferences)
+    {
+        _uiPreferences = Clone(preferences);
+        ApplyUiPreferences();
+    }
+
     private void ResultsList_MouseDoubleClick(object sender, MouseButtonEventArgs e)
     {
         ActivateSelectedResult();
@@ -432,36 +486,11 @@ public partial class SearchWindow : Window
         }
     }
 
-    private void ToolsButton_Click(object sender, RoutedEventArgs e)
-    {
-        try
-        {
-            var toolsPath = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-                "FlashSpot");
-
-            var processInfo = new ProcessStartInfo
-            {
-                FileName = toolsPath,
-                UseShellExecute = true
-            };
-            Process.Start(processInfo);
-        }
-        catch
-        {
-            SearchStatusText.Text = "Could not open FlashSpot tools folder.";
-        }
-    }
-
-    private void QuitButton_Click(object sender, RoutedEventArgs e)
-    {
-        Application.Current.Shutdown();
-    }
-
     private void Window_Deactivated(object sender, EventArgs e)
     {
         if (IsVisible)
         {
+            AppLogoButton.IsChecked = false;
             Hide();
         }
     }
@@ -472,6 +501,16 @@ public partial class SearchWindow : Window
         {
             DragMove();
         }
+    }
+
+    private static SpotlightUiPreferences Clone(SpotlightUiPreferences preferences)
+    {
+        return new SpotlightUiPreferences
+        {
+            ShowKeyHintsInFooter = preferences.ShowKeyHintsInFooter,
+            ShowIndexStatusInHeader = preferences.ShowIndexStatusInHeader,
+            ShowFilterChips = preferences.ShowFilterChips
+        };
     }
 
     private enum SearchItemKind
