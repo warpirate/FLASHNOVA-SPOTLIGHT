@@ -1,0 +1,43 @@
+## Build artifacts
+/src/**/bin/
+/src/**/obj/
+
+## Visual Studio / Rider / VS Code
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+.vs/
+.idea/
+.vscode/
+
+## NuGet
+*.nupkg
+*.snupkg
+**/packages/*
+!**/packages/build/
+!**/packages/repositories.config
+*.nuget.props
+*.nuget.targets
+
+## Logs / diagnostics
+*.log
+*.svclog
+*.etl
+
+## OS-specific cruft
+Thumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*.DS_Store
+
+## Resharper / Rider
+_ReSharper*/
+*.DotSettings.user
+
+## Temporary files
+*.tmp
+*.temp
+*.cache
+
+ui updates/
