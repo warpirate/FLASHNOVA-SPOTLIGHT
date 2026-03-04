@@ -9,5 +9,9 @@ public sealed class FlashSpotSettings
     public int MaxTextFileBytes { get; init; } = 524_288;
     public int MaxSearchResults { get; init; } = 40;
     public string SettingsPath { get; init; } = string.Empty;
+    public bool EnableWebSearch { get; init; } = true;
+    public bool EnableDictionary { get; init; } = true;
+    public bool EnableCurrencyConversion { get; init; } = true;
+    public bool EnableWeather { get; init; } = true;
 }
 

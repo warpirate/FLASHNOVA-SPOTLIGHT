@@ -1,54 +1,61 @@
 using System.Collections.ObjectModel;
-using System.Collections.Concurrent;
 using System.Diagnostics;
-using System.Runtime.InteropServices;
+using System.IO;
 using System.Windows;
 using System.Windows.Input;
-using System.Windows.Interop;
 using System.Windows.Media;
-using System.Windows.Media.Imaging;
+using System.Windows.Media.Animation;
 using System.Windows.Threading;
+using FlashSpot.App.Infrastructure;
+using FlashSpot.App.Models;
 using FlashSpot.Core.Abstractions;
 using FlashSpot.Core.Models;
+using FlashSpot.Core.Services;
 
 namespace FlashSpot.App;
 
 public partial class SearchWindow : Window
 {
-    private const int SearchDebounceMs = 120;
+    private const int SearchDebounceMs = 250;
     private const int MaxUiResults = 40;
+    private const string EmptyQueryText = "Type to search";
 
-    private readonly IFileSearchService _fileSearchService;
-    private readonly ICalculatorService _calculatorService;
+    private readonly SearchAggregator _aggregator;
     private readonly IIndexStatusService _indexStatusService;
+    private readonly IFileIndexingService _indexingService;
     private readonly IFlashSpotSettingsProvider _settingsProvider;
+    private readonly UsageTracker? _usageTracker;
     private readonly ObservableCollection<SearchListItem> _results = [];
     private readonly DispatcherTimer _searchDebounceTimer;
     private readonly DispatcherTimer _indexStatusTimer;
-    private static readonly ConcurrentDictionary<string, ImageSource?> IconCache = new(StringComparer.OrdinalIgnoreCase);
 
+    private List<SearchListItem> _allResults = [];
     private CancellationTokenSource? _searchCts;
+    private CancellationTokenSource? _iconCts;
     private SettingsWindow? _settingsWindow;
     private string _hotkeyHint = "Alt+Space";
     private bool _allowRealClose;
     private bool _statusRefreshInFlight;
+    private SearchCategory _selectedCategory = SearchCategory.All;
     private SpotlightUiPreferences _uiPreferences = new()
     {
-        ShowKeyHintsInFooter = false,
+        ShowKeyHintsInFooter = true,
         ShowIndexStatusInHeader = false,
-        ShowFilterChips = false
+        ShowFilterChips = true
     };
 
     public SearchWindow(
-        IFileSearchService fileSearchService,
-        ICalculatorService calculatorService,
+        SearchAggregator aggregator,
         IIndexStatusService indexStatusService,
-        IFlashSpotSettingsProvider settingsProvider)
+        IFileIndexingService indexingService,
+        IFlashSpotSettingsProvider settingsProvider,
+        UsageTracker? usageTracker = null)
     {
-        _fileSearchService = fileSearchService;
-        _calculatorService = calculatorService;
+        _aggregator = aggregator;
         _indexStatusService = indexStatusService;
+        _indexingService = indexingService;
         _settingsProvider = settingsProvider;
+        _usageTracker = usageTracker;
 
         InitializeComponent();
 
@@ -67,9 +74,15 @@ public partial class SearchWindow : Window
         _indexStatusTimer.Tick += IndexStatusTimer_Tick;
         _indexStatusTimer.Start();
 
-        KeyHintFooterText.Text = $"Enter: Open   Esc: Hide   {_hotkeyHint}: Toggle";
+        KeyHintFooterText.Text = "↵ Open  ⌃↵ Reveal  ⎋ Close";
         ApplyUiPreferences();
         _ = RefreshIndexStatusAsync();
+    }
+
+    protected override void OnSourceInitialized(EventArgs e)
+    {
+        base.OnSourceInitialized(e);
+        WindowBackdrop.TryApplyAcrylic(this);
     }
 
     public void ShowForInput()
@@ -84,13 +97,13 @@ public partial class SearchWindow : Window
         SearchInput.Focus();
         SearchInput.SelectAll();
         _ = RefreshIndexStatusAsync();
+        AnimateCardIn();
     }
 
     public void SetHotkeyHint(string hotkey)
     {
         _hotkeyHint = hotkey;
         HotkeyHintText.Text = hotkey;
-        KeyHintFooterText.Text = $"Enter: Open   Esc: Hide   {hotkey}: Toggle";
         _settingsWindow?.ApplyHotkeyHint(hotkey);
     }
 
@@ -112,10 +125,40 @@ public partial class SearchWindow : Window
         _indexStatusTimer.Stop();
         _searchCts?.Cancel();
         _searchCts?.Dispose();
+        _iconCts?.Cancel();
+        _iconCts?.Dispose();
         _settingsWindow?.Close();
 
         base.OnClosing(e);
     }
+
+    // ─── Animation ──────────────────────────────────────────────
+
+    private void AnimateCardIn()
+    {
+        SpotlightCard.Opacity = 0;
+        CardScale.ScaleX = 0.96;
+        CardScale.ScaleY = 0.96;
+
+        var fadeIn = new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(160))
+        {
+            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
+        };
+        var scaleX = new DoubleAnimation(0.96, 1, TimeSpan.FromMilliseconds(200))
+        {
+            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
+        };
+        var scaleY = new DoubleAnimation(0.96, 1, TimeSpan.FromMilliseconds(200))
+        {
+            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
+        };
+
+        SpotlightCard.BeginAnimation(OpacityProperty, fadeIn);
+        CardScale.BeginAnimation(ScaleTransform.ScaleXProperty, scaleX);
+        CardScale.BeginAnimation(ScaleTransform.ScaleYProperty, scaleY);
+    }
+
+    // ─── Search Logic ───────────────────────────────────────────
 
     private void SearchInput_TextChanged(object sender, System.Windows.Controls.TextChangedEventArgs e)
     {
@@ -136,170 +179,194 @@ public partial class SearchWindow : Window
         _searchCts = new CancellationTokenSource();
         var cancellationToken = _searchCts.Token;
 
+        // Cancel any in-progress icon loading from previous search
+        _iconCts?.Cancel();
+        _iconCts?.Dispose();
+        _iconCts = null;
+
         if (string.IsNullOrWhiteSpace(query))
         {
-            _results.Clear();
-            SearchStatusText.Text = "Type to search your existing FlashSpot index.";
+            _allResults = [];
+            ReplaceDisplayedResults([]);
+            ResultsList.SelectedIndex = -1;
+            SearchStatusText.Text = EmptyQueryText;
             return;
         }
 
         try
         {
-            var localResults = new List<SearchListItem>(MaxUiResults);
+            var categoryFilter = _selectedCategory == SearchCategory.All
+                ? null
+                : _selectedCategory.ToString();
 
-            if (_calculatorService.TryEvaluate(query, out var calc))
-            {
-                localResults.Add(new SearchListItem
-                {
-                    Kind = SearchItemKind.Calculation,
-                    IconText = "=",
-                    IconImage = null,
-                    Title = $"{query} = {calc}",
-                    Subtitle = "Press Enter to copy result",
-                    DateText = string.Empty,
-                    SizeText = "Calc",
-                    Value = calc
-                });
-            }
+            var hits = await _aggregator.SearchAsync(query, categoryFilter, MaxUiResults, cancellationToken);
 
-            var hits = await _fileSearchService.SearchAsync(query, MaxUiResults, cancellationToken);
+            var localResults = new List<SearchListItem>(hits.Count);
             foreach (var hit in hits)
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                localResults.Add(MapHit(hit));
+                localResults.Add(MapResult(hit));
             }
 
-            _results.Clear();
-            foreach (var item in localResults.Take(MaxUiResults))
-            {
-                _results.Add(item);
-            }
+            _allResults = localResults;
+            ApplyFilterToDisplayedResults();
 
             ResultsList.SelectedIndex = _results.Count > 0 ? 0 : -1;
             SearchStatusText.Text = _results.Count > 0
-                ? $"{_results.Count} result(s)"
-                : "No matches found in current index.";
+                ? $"{_results.Count} result{(_results.Count != 1 ? "s" : "")}"
+                : "No matches found.";
+
+            // Load icons asynchronously at background priority (not blocking the UI)
+            _iconCts = new CancellationTokenSource();
+            _ = LoadIconsAsync(_allResults, _iconCts.Token);
         }
         catch (OperationCanceledException)
         {
         }
         catch (Exception ex)
         {
-            _results.Clear();
+            _allResults = [];
+            ReplaceDisplayedResults([]);
             SearchStatusText.Text = $"Search error: {ex.Message}";
         }
     }
 
-    private static SearchListItem MapHit(SearchHit hit)
+    // ─── Mapping ────────────────────────────────────────────────
+
+    private static SearchListItem MapResult(SearchResult result)
     {
+        var category = ParseCategory(result.Category);
+        var kind = ParseKind(result.Kind);
+
         return new SearchListItem
         {
-            Kind = SearchItemKind.File,
-            IconText = BadgeForExtension(hit.Extension),
-            IconImage = GetIconImage(hit.Path, hit.Extension),
-            Title = string.IsNullOrWhiteSpace(hit.Name) ? System.IO.Path.GetFileName(hit.Path) : hit.Name,
-            Subtitle = CompactPath(hit.Path),
-            DateText = hit.LastModifiedUtc?.ToLocalTime().ToString("dd-MM-yyyy HH:mm") ?? string.Empty,
-            SizeText = hit.SizeBytes.HasValue ? FormatSize(hit.SizeBytes.Value) : (string.IsNullOrWhiteSpace(hit.Extension) ? "File" : hit.Extension.TrimStart('.').ToLowerInvariant()),
-            Path = hit.Path
+            Category = category,
+            Kind = kind,
+            IconText = result.IconGlyph ?? BadgeForKind(kind, result.IconPath),
+            // IconImage loaded asynchronously after results are displayed
+            Title = result.Title,
+            Subtitle = kind == SearchItemKind.File ? CompactPath(result.Subtitle) : result.Subtitle,
+            DateText = result.Timestamp?.ToLocalTime().ToString("dd-MM-yyyy HH:mm") ?? string.Empty,
+            SizeText = result.SizeBytes.HasValue
+                ? FormatSize(result.SizeBytes.Value)
+                : KindLabel(kind, result.IconPath),
+            Path = result.IconPath ?? result.ActionUri,
+            Value = result.InlineValue,
+            ActionUri = result.ActionUri,
+            SecondaryActionUri = result.SecondaryActionUri,
+            InlineValue = result.InlineValue
         };
     }
 
-    private static string BadgeForExtension(string extension)
+    private async Task LoadIconsAsync(IReadOnlyList<SearchListItem> items, CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(extension))
+        foreach (var item in items)
+        {
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return;
+            }
+
+            if (item.Path is null)
+            {
+                continue;
+            }
+
+            var path = item.Path;
+            var ext = Path.GetExtension(path);
+
+            // Load each icon at Background priority so the UI thread processes input first
+            await Dispatcher.InvokeAsync(() =>
+            {
+                if (!cancellationToken.IsCancellationRequested)
+                {
+                    item.IconImage = ShellIconExtractor.GetIconImage(path, ext);
+                }
+            }, DispatcherPriority.Background);
+        }
+    }
+
+    private static SearchCategory ParseCategory(string category)
+    {
+        return Enum.TryParse<SearchCategory>(category, ignoreCase: true, out var parsed)
+            ? parsed
+            : SearchCategory.All;
+    }
+
+    private static SearchItemKind ParseKind(string kind)
+    {
+        return Enum.TryParse<SearchItemKind>(kind, ignoreCase: true, out var parsed)
+            ? parsed
+            : SearchItemKind.File;
+    }
+
+    private static string BadgeForKind(SearchItemKind kind, string? iconPath)
+    {
+        return kind switch
+        {
+            SearchItemKind.Calculation => "=",
+            SearchItemKind.SystemCommand => "cmd",
+            SearchItemKind.Definition => "Aa",
+            SearchItemKind.UnitConversion => "unit",
+            SearchItemKind.Weather => "wx",
+            SearchItemKind.WebResult => "web",
+            SearchItemKind.ClipboardItem => "clip",
+            SearchItemKind.Bookmark => "link",
+            SearchItemKind.QuickAction => ">_",
+            _ => BadgeForExtension(iconPath)
+        };
+    }
+
+    private static string KindLabel(SearchItemKind kind, string? iconPath)
+    {
+        return kind switch
+        {
+            SearchItemKind.Calculation => "Calc",
+            SearchItemKind.SystemCommand => "System",
+            SearchItemKind.Definition => "Definition",
+            SearchItemKind.UnitConversion => "Convert",
+            SearchItemKind.Weather => "Weather",
+            SearchItemKind.WebResult => "Web",
+            SearchItemKind.Application => "App",
+            SearchItemKind.ClipboardItem => "Clipboard",
+            SearchItemKind.Bookmark => "Bookmark",
+            SearchItemKind.QuickAction => "Action",
+            _ when iconPath is not null => ExtensionLabel(iconPath),
+            _ => "File"
+        };
+    }
+
+    private static string ExtensionLabel(string path)
+    {
+        var ext = Path.GetExtension(path);
+        return string.IsNullOrWhiteSpace(ext) ? "File" : ext.TrimStart('.').ToLowerInvariant();
+    }
+
+    private static string BadgeForExtension(string? path)
+    {
+        if (path is null)
         {
             return "file";
         }
 
-        var ext = extension.Trim().TrimStart('.').ToLowerInvariant();
+        var ext = Path.GetExtension(path)?.TrimStart('.').ToLowerInvariant() ?? "";
         if (ext.Length > 4)
         {
             ext = ext[..4];
         }
 
-        return $".{ext}";
+        return ext.Length > 0 ? $".{ext}" : "file";
     }
 
-    private static ImageSource? GetIconImage(string? path, string extension)
-    {
-        var ext = string.IsNullOrWhiteSpace(extension) ? string.Empty : extension.Trim().ToLowerInvariant();
-        var cacheKey = ShouldCacheByPath(ext) && !string.IsNullOrWhiteSpace(path)
-            ? path!
-            : $"ext:{ext}";
-
-        if (IconCache.TryGetValue(cacheKey, out var cached))
-        {
-            return cached;
-        }
-
-        ImageSource? result = null;
-
-        if (!string.IsNullOrWhiteSpace(path))
-        {
-            result = TryGetShellIcon(path!, useFileAttributes: false);
-        }
-
-        if (result is null && !string.IsNullOrWhiteSpace(ext))
-        {
-            result = TryGetShellIcon(ext, useFileAttributes: true);
-        }
-
-        IconCache[cacheKey] = result;
-        return result;
-    }
-
-    private static bool ShouldCacheByPath(string extension)
-    {
-        return extension is ".exe" or ".lnk" or ".ico";
-    }
-
-    private static ImageSource? TryGetShellIcon(string pathOrExtension, bool useFileAttributes)
-    {
-        var attributes = useFileAttributes ? FileAttributeNormal : 0u;
-        var flags = ShgfiIcon | ShgfiSmallIcon | (useFileAttributes ? ShgfiUseFileAttributes : 0u);
-
-        var info = new SHFILEINFO();
-        var result = SHGetFileInfo(
-            pathOrExtension,
-            attributes,
-            out info,
-            (uint)Marshal.SizeOf<SHFILEINFO>(),
-            flags);
-
-        if (result == IntPtr.Zero || info.hIcon == IntPtr.Zero)
-        {
-            return null;
-        }
-
-        try
-        {
-            var source = Imaging.CreateBitmapSourceFromHIcon(
-                info.hIcon,
-                Int32Rect.Empty,
-                BitmapSizeOptions.FromWidthAndHeight(20, 20));
-            source.Freeze();
-            return source;
-        }
-        catch
-        {
-            return null;
-        }
-        finally
-        {
-            _ = DestroyIcon(info.hIcon);
-        }
-    }
-
-    private static string CompactPath(string path, int maxLength = 130)
+    private static string CompactPath(string path, int maxLength = 80)
     {
         if (string.IsNullOrWhiteSpace(path) || path.Length <= maxLength)
         {
             return path;
         }
 
-        var root = System.IO.Path.GetPathRoot(path) ?? string.Empty;
-        var fileName = System.IO.Path.GetFileName(path);
+        var root = Path.GetPathRoot(path) ?? string.Empty;
+        var fileName = Path.GetFileName(path);
         var budget = Math.Max(12, maxLength - root.Length - fileName.Length - 5);
         var middle = path.Substring(root.Length);
 
@@ -324,6 +391,8 @@ public partial class SearchWindow : Window
 
         return $"{value:0.##} {sizes[order]}";
     }
+
+    // ─── Index Status ───────────────────────────────────────────
 
     private async void IndexStatusTimer_Tick(object? sender, EventArgs e)
     {
@@ -358,7 +427,13 @@ public partial class SearchWindow : Window
         IndexHeaderText.Text = $"{headerMode} | Indexed {snapshot.IndexedItemCount:n0} items";
         QueueFooterText.Text = $"Pending {snapshot.PendingCount:n0} | Failed {snapshot.FailedCount:n0}";
         IndexingProgressBar.Visibility = snapshot.IsIndexing ? Visibility.Visible : Visibility.Collapsed;
+
+        QueueFooterText.Visibility = snapshot.PendingCount > 0 || snapshot.FailedCount > 0
+            ? Visibility.Visible
+            : Visibility.Collapsed;
     }
+
+    // ─── UI Preferences ────────────────────────────────────────
 
     private void ApplyUiPreferences()
     {
@@ -369,15 +444,14 @@ public partial class SearchWindow : Window
 
     private void OpenSettingsButton_Click(object sender, RoutedEventArgs e)
     {
-        AppLogoButton.IsChecked = false;
-
         if (_settingsWindow is null)
         {
             _settingsWindow = new SettingsWindow(
                 _indexStatusService,
+                _indexingService,
                 _settingsProvider,
                 _hotkeyHint,
-                Clone(_uiPreferences),
+                _uiPreferences.Clone(),
                 OnUiPreferencesChanged);
             _settingsWindow.Closed += (_, _) => _settingsWindow = null;
         }
@@ -398,9 +472,100 @@ public partial class SearchWindow : Window
 
     private void OnUiPreferencesChanged(SpotlightUiPreferences preferences)
     {
-        _uiPreferences = Clone(preferences);
+        _uiPreferences = preferences.Clone();
         ApplyUiPreferences();
     }
+
+    // ─── Filtering ──────────────────────────────────────────────
+
+    private void FilterPill_Checked(object sender, RoutedEventArgs e)
+    {
+        if (sender is not System.Windows.Controls.RadioButton radioButton)
+        {
+            return;
+        }
+
+        var tag = radioButton.Tag?.ToString();
+        if (!Enum.TryParse<SearchCategory>(tag, ignoreCase: true, out var next))
+        {
+            next = SearchCategory.All;
+        }
+
+        if (next == _selectedCategory)
+        {
+            return;
+        }
+
+        _selectedCategory = next;
+
+        if (!string.IsNullOrWhiteSpace(SearchInput.Text))
+        {
+            _ = RunSearchAsync(SearchInput.Text);
+            return;
+        }
+
+        ApplyFilterToDisplayedResults();
+        ResultsList.SelectedIndex = _results.Count > 0 ? 0 : -1;
+
+        if (string.IsNullOrWhiteSpace(SearchInput.Text))
+        {
+            SearchStatusText.Text = EmptyQueryText;
+        }
+        else if (_results.Count > 0)
+        {
+            SearchStatusText.Text = $"{_results.Count} result{(_results.Count != 1 ? "s" : "")}";
+        }
+        else
+        {
+            SearchStatusText.Text = "No matches found.";
+        }
+    }
+
+    private void ApplyFilterToDisplayedResults()
+    {
+        // Detach ItemsSource to prevent per-item UI updates
+        ResultsList.ItemsSource = null;
+
+        _results.Clear();
+        foreach (var item in _allResults.Take(MaxUiResults))
+        {
+            if (ShouldIncludeInFilter(item, _selectedCategory))
+            {
+                _results.Add(item);
+            }
+        }
+
+        // Reattach — single UI layout pass
+        ResultsList.ItemsSource = _results;
+    }
+
+    private void ReplaceDisplayedResults(IReadOnlyList<SearchListItem> items)
+    {
+        ResultsList.ItemsSource = null;
+        _results.Clear();
+        foreach (var item in items)
+        {
+            _results.Add(item);
+        }
+        ResultsList.ItemsSource = _results;
+    }
+
+    private static bool ShouldIncludeInFilter(SearchListItem item, SearchCategory filter)
+    {
+        if (filter == SearchCategory.All)
+        {
+            return true;
+        }
+
+        if (item.Kind == SearchItemKind.Calculation)
+        {
+            return false;
+        }
+
+        return item.Category == filter;
+    }
+
+    // ─── Actions ────────────────────────────────────────────────
 
     private void ResultsList_MouseDoubleClick(object sender, MouseButtonEventArgs e)
     {
@@ -420,7 +585,14 @@ public partial class SearchWindow : Window
                 e.Handled = true;
                 break;
             case Key.Enter:
-                ActivateSelectedResult();
+                if ((Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control)
+                {
+                    OpenSelectedResultLocation();
+                }
+                else
+                {
+                    ActivateSelectedResult();
+                }
                 e.Handled = true;
                 break;
             case Key.Escape:
@@ -458,14 +630,86 @@ public partial class SearchWindow : Window
             return;
         }
 
-        if (selected.Kind == SearchItemKind.Calculation)
+        var actionUri = selected.ActionUri ?? selected.Path;
+
+        // Record usage for ranking
+        if (actionUri is not null)
         {
-            Clipboard.SetText(selected.Value ?? string.Empty);
-            SearchStatusText.Text = "Calculator result copied to clipboard.";
+            _usageTracker?.RecordActivation(actionUri);
+        }
+
+        // Handle copy:// scheme (calculator results, definitions)
+        if (actionUri is not null && actionUri.StartsWith("copy://", StringComparison.OrdinalIgnoreCase))
+        {
+            var valueToCopy = actionUri["copy://".Length..];
+            Clipboard.SetText(valueToCopy);
+            SearchStatusText.Text = "Result copied to clipboard.";
             return;
         }
 
-        if (string.IsNullOrWhiteSpace(selected.Path))
+        // Handle cmd:// scheme (system commands)
+        if (actionUri is not null && actionUri.StartsWith("cmd://", StringComparison.OrdinalIgnoreCase))
+        {
+            if (SystemCommandExecutor.TryExecute(actionUri, out var errorMessage))
+            {
+                Hide();
+            }
+            else if (errorMessage is not null)
+            {
+                SearchStatusText.Text = errorMessage;
+            }
+            return;
+        }
+
+        // Handle shell:// scheme (quick action shell commands)
+        if (actionUri is not null && actionUri.StartsWith("shell://", StringComparison.OrdinalIgnoreCase))
+        {
+            var cmd = actionUri["shell://".Length..];
+            try
+            {
+                Process.Start(new ProcessStartInfo { FileName = cmd, UseShellExecute = true });
+                Hide();
+            }
+            catch
+            {
+                SearchStatusText.Text = $"Could not run: {cmd}";
+            }
+            return;
+        }
+
+        // Handle ms-settings: URIs
+        if (actionUri is not null && actionUri.StartsWith("ms-settings:", StringComparison.OrdinalIgnoreCase))
+        {
+            try
+            {
+                Process.Start(new ProcessStartInfo { FileName = actionUri, UseShellExecute = true });
+                Hide();
+            }
+            catch
+            {
+                SearchStatusText.Text = "Could not open Settings.";
+            }
+            return;
+        }
+
+        // Handle http/https URLs (web results, bookmarks)
+        if (actionUri is not null && (actionUri.StartsWith("http://", StringComparison.OrdinalIgnoreCase)
+            || actionUri.StartsWith("https://", StringComparison.OrdinalIgnoreCase)))
+        {
+            try
+            {
+                Process.Start(new ProcessStartInfo { FileName = actionUri, UseShellExecute = true });
+                Hide();
+            }
+            catch
+            {
+                SearchStatusText.Text = "Could not open URL.";
+            }
+            return;
+        }
+
+        // Handle file paths
+        if (string.IsNullOrWhiteSpace(actionUri))
         {
             return;
         }
@@ -474,7 +718,7 @@ public partial class SearchWindow : Window
         {
             var processInfo = new ProcessStartInfo
             {
-                FileName = selected.Path,
+                FileName = actionUri,
                 UseShellExecute = true
             };
             Process.Start(processInfo);
@@ -486,80 +730,59 @@ public partial class SearchWindow : Window
         }
     }
 
+    private void OpenSelectedResultLocation()
+    {
+        if (ResultsList.SelectedItem is not SearchListItem selected)
+        {
+            return;
+        }
+
+        var path = selected.SecondaryActionUri ?? selected.Path;
+        if (string.IsNullOrWhiteSpace(path) || !Path.Exists(path))
+        {
+            return;
+        }
+
+        try
+        {
+            var args = Directory.Exists(path)
+                ? $"\"{path}\""
+                : $"/select,\"{path}\"";
+
+            var processInfo = new ProcessStartInfo
+            {
+                FileName = "explorer.exe",
+                Arguments = args,
+                UseShellExecute = true
+            };
+            Process.Start(processInfo);
+        }
+        catch
+        {
+            SearchStatusText.Text = "Could not open item location.";
+        }
+    }
+
+    // ─── Window Events ──────────────────────────────────────────
+
     private void Window_Deactivated(object sender, EventArgs e)
     {
         if (IsVisible)
         {
-            AppLogoButton.IsChecked = false;
             Hide();
         }
     }
 
-    private void Window_MouseDown(object sender, MouseButtonEventArgs e)
+    private void Overlay_MouseDown(object sender, MouseButtonEventArgs e)
     {
         if (e.LeftButton == MouseButtonState.Pressed)
         {
-            DragMove();
+            Hide();
         }
     }
 
-    private static SpotlightUiPreferences Clone(SpotlightUiPreferences preferences)
+    private void Card_MouseDown(object sender, MouseButtonEventArgs e)
     {
-        return new SpotlightUiPreferences
-        {
-            ShowKeyHintsInFooter = preferences.ShowKeyHintsInFooter,
-            ShowIndexStatusInHeader = preferences.ShowIndexStatusInHeader,
-            ShowFilterChips = preferences.ShowFilterChips
-        };
-    }
-
-    private enum SearchItemKind
-    {
-        File,
-        Calculation
-    }
-
-    private sealed class SearchListItem
-    {
-        public SearchItemKind Kind { get; init; }
-        public required string IconText { get; init; }
-        public ImageSource? IconImage { get; init; }
-        public required string Title { get; init; }
-        public required string Subtitle { get; init; }
-        public required string DateText { get; init; }
-        public required string SizeText { get; init; }
-        public string? Path { get; init; }
-        public string? Value { get; init; }
-    }
-
-    private const uint ShgfiIcon = 0x000000100;
-    private const uint ShgfiSmallIcon = 0x000000001;
-    private const uint ShgfiUseFileAttributes = 0x000000010;
-    private const uint FileAttributeNormal = 0x000000080;
-
-    [DllImport("shell32.dll", CharSet = CharSet.Auto)]
-    private static extern IntPtr SHGetFileInfo(
-        string pszPath,
-        uint dwFileAttributes,
-        out SHFILEINFO psfi,
-        uint cbFileInfo,
-        uint uFlags);
-
-    [DllImport("user32.dll", SetLastError = true)]
-    [return: MarshalAs(UnmanagedType.Bool)]
-    private static extern bool DestroyIcon(IntPtr hIcon);
-
-    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
-    private struct SHFILEINFO
-    {
-        public IntPtr hIcon;
-        public int iIcon;
-        public uint dwAttributes;
-
-        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 260)]
-        public string szDisplayName;
-
-        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 80)]
-        public string szTypeName;
+        e.Handled = true;
     }
 }

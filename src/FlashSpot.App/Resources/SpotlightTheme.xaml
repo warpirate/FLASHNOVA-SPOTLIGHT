@@ -1,0 +1,202 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         FlashSpot — macOS Spotlight-inspired theme for Windows
+         ═══════════════════════════════════════════════════════════════ -->
+
+    <!-- Overlay -->
+    <Color x:Key="FsColorOverlayDim">#22000000</Color>
+
+    <!-- Card — translucent dark glass -->
+    <Color x:Key="FsColorCardFill">#E01E1E1E</Color>
+    <Color x:Key="FsColorCardStroke">#38FFFFFF</Color>
+
+    <!-- Search bar -->
+    <Color x:Key="FsColorSearchFill">#18FFFFFF</Color>
+    <Color x:Key="FsColorSearchStroke">#20FFFFFF</Color>
+    <Color x:Key="FsColorSearchFocusStroke">#55FFFFFF</Color>
+
+    <!-- Typography -->
+    <Color x:Key="FsColorTextPrimary">#F5F5F7</Color>
+    <Color x:Key="FsColorTextSecondary">#A1A1A6</Color>
+    <Color x:Key="FsColorTextMuted">#6E6E73</Color>
+
+    <!-- Accent — Spotlight blue -->
+    <Color x:Key="FsColorAccent">#0A84FF</Color>
+    <Color x:Key="FsColorAccentSubtle">#1A0A84FF</Color>
+
+    <!-- Filter pills -->
+    <Color x:Key="FsColorPillFill">#14FFFFFF</Color>
+    <Color x:Key="FsColorPillFillSelected">#0A84FF</Color>
+    <Color x:Key="FsColorPillStroke">#18FFFFFF</Color>
+
+    <!-- Result rows -->
+    <Color x:Key="FsColorRowHover">#14FFFFFF</Color>
+    <Color x:Key="FsColorRowSelected">#330A84FF</Color>
+    <Color x:Key="FsColorRowSelectedStroke">#440A84FF</Color>
+    <Color x:Key="FsColorRowStroke">#00FFFFFF</Color>
+
+    <!-- Icon tile -->
+    <Color x:Key="FsColorIconTileFill">#18FFFFFF</Color>
+    <Color x:Key="FsColorIconTileStroke">#14FFFFFF</Color>
+
+    <!-- Separator -->
+    <Color x:Key="FsColorSeparator">#1AFFFFFF</Color>
+
+    <!-- ─── Brushes ────────────────────────────────────────── -->
+    <SolidColorBrush x:Key="OverlayDimBrush" Color="{StaticResource FsColorOverlayDim}" />
+    <SolidColorBrush x:Key="CardFillBrush" Color="{StaticResource FsColorCardFill}" />
+    <SolidColorBrush x:Key="CardStrokeBrush" Color="{StaticResource FsColorCardStroke}" />
+    <SolidColorBrush x:Key="SearchFillBrush" Color="{StaticResource FsColorSearchFill}" />
+    <SolidColorBrush x:Key="SearchStrokeBrush" Color="{StaticResource FsColorSearchStroke}" />
+    <SolidColorBrush x:Key="SearchFocusStrokeBrush" Color="{StaticResource FsColorSearchFocusStroke}" />
+    <SolidColorBrush x:Key="TextPrimaryBrush" Color="{StaticResource FsColorTextPrimary}" />
+    <SolidColorBrush x:Key="TextSecondaryBrush" Color="{StaticResource FsColorTextSecondary}" />
+    <SolidColorBrush x:Key="TextMutedBrush" Color="{StaticResource FsColorTextMuted}" />
+    <SolidColorBrush x:Key="AccentBrush" Color="{StaticResource FsColorAccent}" />
+    <SolidColorBrush x:Key="AccentSubtleBrush" Color="{StaticResource FsColorAccentSubtle}" />
+    <SolidColorBrush x:Key="PillFillBrush" Color="{StaticResource FsColorPillFill}" />
+    <SolidColorBrush x:Key="PillFillSelectedBrush" Color="{StaticResource FsColorPillFillSelected}" />
+    <SolidColorBrush x:Key="PillStrokeBrush" Color="{StaticResource FsColorPillStroke}" />
+    <SolidColorBrush x:Key="RowHoverBrush" Color="{StaticResource FsColorRowHover}" />
+    <SolidColorBrush x:Key="RowSelectedBrush" Color="{StaticResource FsColorRowSelected}" />
+    <SolidColorBrush x:Key="RowSelectedStrokeBrush" Color="{StaticResource FsColorRowSelectedStroke}" />
+    <SolidColorBrush x:Key="RowStrokeBrush" Color="{StaticResource FsColorRowStroke}" />
+    <SolidColorBrush x:Key="IconTileFillBrush" Color="{StaticResource FsColorIconTileFill}" />
+    <SolidColorBrush x:Key="IconTileStrokeBrush" Color="{StaticResource FsColorIconTileStroke}" />
+    <SolidColorBrush x:Key="SeparatorBrush" Color="{StaticResource FsColorSeparator}" />
+
+    <!-- Keep old brush keys for SettingsWindow compatibility -->
+    <SolidColorBrush x:Key="CardInnerStrokeBrush" Color="{StaticResource FsColorSeparator}" />
+
+    <!-- ─── Corner Radii ───────────────────────────────────── -->
+    <CornerRadius x:Key="CardCornerRadius">18</CornerRadius>
+    <CornerRadius x:Key="SearchBarCornerRadius">12</CornerRadius>
+    <CornerRadius x:Key="PillCornerRadius">8</CornerRadius>
+    <CornerRadius x:Key="RowCornerRadius">10</CornerRadius>
+    <CornerRadius x:Key="IconTileCornerRadius">10</CornerRadius>
+
+    <!-- ─── Search TextBox ─────────────────────────────────── -->
+    <Style x:Key="SearchTextBoxStyle" TargetType="TextBox">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
+        <Setter Property="CaretBrush" Value="{StaticResource TextPrimaryBrush}" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="FontFamily" Value="Segoe UI Variable Display, Segoe UI" />
+        <Setter Property="FontSize" Value="24" />
+        <Setter Property="FontWeight" Value="Normal" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+    </Style>
+
+    <!-- ─── Icon Button (Settings gear) ────────────────────── -->
+    <Style x:Key="IconButtonStyle" TargetType="Button">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderBrush" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Foreground" Value="{StaticResource TextMutedBrush}" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="Width" Value="32" />
+        <Setter Property="Height" Value="32" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="Root"
+                            Background="{TemplateBinding Background}"
+                            CornerRadius="8">
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Root" Property="Background" Value="{StaticResource PillFillBrush}" />
+                            <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}" />
+                        </Trigger>
+                        <Trigger Property="IsPressed" Value="True">
+                            <Setter TargetName="Root" Property="Opacity" Value="0.7" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- ─── Filter Pill Radio ──────────────────────────────── -->
+    <Style x:Key="PillRadioStyle" TargetType="RadioButton">
+        <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}" />
+        <Setter Property="Background" Value="{StaticResource PillFillBrush}" />
+        <Setter Property="BorderBrush" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Padding" Value="12,5" />
+        <Setter Property="FontFamily" Value="Segoe UI Variable Display, Segoe UI" />
+        <Setter Property="FontSize" Value="13" />
+        <Setter Property="FontWeight" Value="Medium" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="RadioButton">
+                    <Border x:Name="Root"
+                            Background="{TemplateBinding Background}"
+                            CornerRadius="{StaticResource PillCornerRadius}"
+                            SnapsToDevicePixels="True">
+                        <ContentPresenter Margin="{TemplateBinding Padding}"
+                                          HorizontalAlignment="Center"
+                                          VerticalAlignment="Center" />
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Root" Property="Background" Value="#22FFFFFF" />
+                            <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
+                        </Trigger>
+                        <Trigger Property="IsChecked" Value="True">
+                            <Setter TargetName="Root" Property="Background" Value="{StaticResource PillFillSelectedBrush}" />
+                            <Setter Property="Foreground" Value="#FFFFFF" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- ─── Results ListBox ────────────────────────────────── -->
+    <Style x:Key="ResultsListBoxStyle" TargetType="ListBox">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Hidden" />
+        <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Disabled" />
+        <Setter Property="SelectionMode" Value="Single" />
+    </Style>
+
+    <!-- ─── Result Item ────────────────────────────────────── -->
+    <Style x:Key="ResultItemStyle" TargetType="ListBoxItem">
+        <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
+        <Setter Property="Padding" Value="10,8" />
+        <Setter Property="Margin" Value="4,1" />
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ListBoxItem">
+                    <Border x:Name="ItemBorder"
+                            CornerRadius="{StaticResource RowCornerRadius}"
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="Transparent"
+                            BorderThickness="1"
+                            Padding="{TemplateBinding Padding}">
+                        <ContentPresenter />
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="ItemBorder" Property="Background" Value="{StaticResource RowHoverBrush}" />
+                        </Trigger>
+                        <Trigger Property="IsSelected" Value="True">
+                            <Setter TargetName="ItemBorder" Property="Background" Value="{StaticResource RowSelectedBrush}" />
+                            <Setter TargetName="ItemBorder" Property="BorderBrush" Value="{StaticResource RowSelectedStrokeBrush}" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+</ResourceDictionary>

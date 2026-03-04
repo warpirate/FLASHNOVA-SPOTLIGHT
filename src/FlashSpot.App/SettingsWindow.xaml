@@ -195,11 +195,19 @@
                                    VerticalAlignment="Center"
                                    Text="Ready | Indexed 0 items" />
 
-                        <Button Grid.Column="1"
-                                Margin="14,0,0,0"
-                                Style="{StaticResource ActionButtonStyle}"
-                                Content="Refresh"
-                                Click="RefreshButton_Click" />
+                        <StackPanel Grid.Column="1" Orientation="Horizontal">
+                            <Button Margin="14,0,0,0"
+                                    Style="{StaticResource ActionButtonStyle}"
+                                    Content="Refresh"
+                                    Click="RefreshButton_Click" />
+                            <Button x:Name="ReindexButton"
+                                    Margin="8,0,0,0"
+                                    Style="{StaticResource ActionButtonStyle}"
+                                    Background="#3A6B9F"
+                                    BorderBrush="#5A99D6"
+                                    Content="Reindex"
+                                    Click="ReindexButton_Click" />
+                        </StackPanel>
                     </Grid>
                 </Border>
 
